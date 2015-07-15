@@ -1,0 +1,48 @@
+1-1: Lambda Expressions
+=======================
+
+Why ?
+
+Concurrency. Multi-threading.
+Java 1.0: java.lang.Thread, with 4 methods. Complicated.
+Java 5.0: java.util.concurrent, toolbox of new classes, APIs,... for threads (semaphores, mutexes,...).
+Java 6.0: Phasers,...
+Java 7.0: Fork/Join framework, to break a single task into multiple subtasks recursively. A pool of threads is created by the framework.
+Java 8.0: Lambdas, to write parallel code.
+
+Lambdas: functional programming.
+
+	Param -> Body
+
+The compiler infers the return type from the body type.
+
+Need changes to Java to simplify parallel coding.
+Lambda expressions simplify how to pass behaviour as a parameter.
+
+1-2: Lambda Expression Syntax
+=============================
+
+(parameters) -> { lambda-body }
+
+-> : lambda operator.
+Lambda = anonymous function.
+Body may throw exceptions.
+Single-line lambdas don't need braces or an explicit return statement.
+Single parameter: don't need brackets.
+No parameters: empty brackets.
+
+Ex:
+() -> System.out.println("Toto")
+x -> x + 10
+(int x, int y) -> { return x + y; } // if braces, semi-colon is mandatory.
+(String x, String y) -> x.length() - y.length()
+(String x) -> {
+	listA.add(x);
+	listB.remove(x);
+	return listB.size();
+}
+
+Type Inference: handled in a better way by the compiler.
+
+Syntax is simple. Brackets and braces are optional for certain situations.
+Type inference means types often do not need to be explicitely stated.
