@@ -110,4 +110,105 @@ The function pacjage provides a range of functional interfaces.
 Used extensively in Stream, but also in many other places.
 Unlikely you will need to define your own extensions to the function package.
 
+1-5: Method and Constructor Refences
+====================================
 
+Short-hand form.
+
+Method references let us reuse a method as a lambda expression:
+	FileFilter x = File f -> f.canRead();
+	FileFilter x = File::canRead;
+Format:
+	target_reference::method_name
+3 kinds: static methods, instance method of an arbitary type, instance method of an existing object.
+
+Rules for construction:
+
+(args) -> ClassName.staticMethod(args)
+ClassName::staticMethod
+
+(arg0, rest) -> arg0.instanceMethod(rest)
+ClassName::instanceMethod
+(ClassName is the type of arg0)
+
+(args) -> expr.instanceMethod(args)
+expr::instanceMethod
+
+Constructor references: same concept as a method ref, for a constructor.
+	
+	Factory<List<String>> f = () -> return new ArrayList<String>();
+	Factory<List<String>> f = ArrayList<String>::new;
+
+Method ref provide a shorthand notation for simple lambdas.
+3 types depending on how they are used.
+Can also be used for constructors.
+
+1-6: Referencing external variables in lambda expressions
+=========================================================
+
+Lambda expresions can refer to effectively final (even if not explicitely declared final, i.e. assigned once) local variables from the surrounding scope.
+Closures on values, not variables.
+
+	void expire(File root, long before) { // before is effectively final
+		root.listFiles(File p -> p.lastModified() <= before);
+	}
+
+This ?
+this refers to the enclosing object, not the lambda itself.
+Think of this as a final predefined local.
+A lambda is an anonymous function, it is not associated with a class, so there can be no this for the lambda.
+
+Referencing instance variables which are not (effectively) final :
+
+	class DataProcessor {
+		private int value;
+		public void process() {
+			DataSet myData = myFactory.getDataSet();
+			dataSet.forEach(d -> d.use(currentValue++)); 	// the compiler replaces with this.currentValue++
+															// where this if effectively final
+		}
+	}
+
+Variables in the surrounding scope can be used in a lambda, as long as they are effectively final.
+this in a lambda refers to the object of the surrounding scope (the compiler inserts a reference to this when required).
+
+1-7: Useful new methods in JDK8 that can use lambdas
+====================================================
+
+Iterable interface:
+	Iterable.forEach(Consumer c)
+	ex: myList.forEach(s -> System.out,println(s));
+		myList.forEach(System.out::println); // method reference
+
+Collection interface:
+	Collection.removeIf(Predicate p)
+	ex: myList.removeIf(s -> s.length() == 0);
+
+List interface:
+	List.replaceAll(UnaryOperator o)
+	ex: myList.replaceAll(s -> s.toUpperCase());
+		myList.replaceAll(String::toUpperCase); //method reference
+	List.sort(Comparator c)
+	replaces Collections.sort(List l, Comparator c)
+	ex: myList.sort((x,y) -> x.length() - y.length()); // the compiler knows the comparator is of type String because of type inference.
+
+Logger class:
+	Common problem:
+		logger.finest(createComplexMessage());
+		-> createComplexMessage is always called even when not required (if the level is not set to the finest)
+	Solution: new methods in Logger class that take a Supplier as an argument
+		-> logger.finest(() -> createComplexMessage());
+	We now pass how to create the message, not the actual message.
+
+Use the new methods in JDK8 to eliminate the frequent need for loops.
+Lambda expressions provide behaviour, not a value (very useful for conditional uses of data).
+
+Summary
+=======
+
+Lambda expressions: provide a simple way to pass behaviour as a parameter or assign to a variable.
+Can be used wherever a functional interface type is used.
+Method and constructor references can be used as shorthand.
+Several useful new methods in JDK8 can use lambdas.
+
+	
