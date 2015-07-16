@@ -46,3 +46,68 @@ Type Inference: handled in a better way by the compiler.
 
 Syntax is simple. Brackets and braces are optional for certain situations.
 Type inference means types often do not need to be explicitely stated.
+
+1-3: Functional Interfaces And Their Definition
+===============================================
+
+Anonymous function: like a method but not associated with a class.
+But Java is strongly typed, so what is the type of the lambda?
+-> a lambda expression can be used wherever the type is a functional interface (single abstract method type, the lambda provides the implementation of the abstract method).
+
+Functional interface:
+- an interface
+- only 1 abstract method (default methods, static methods, equals method [inherited from Object]  are not abstract and do not count!)
+- JDK8 introduces default methods (method in an interface, with an implementation) -> multiple inheritance of behaviour for Java
+- JDK8 allows static methods in interfaces
+- @FunctionalInterface annotation
+
+Ex of existing functional interfaces: FileFilter, ActionListener, Callable...
+
+Use of Lambda expression:
+- variable assignment:
+	Callable c = () -> process();
+- method parameter
+	new Thread(() -> process()).start();
+	
+Lambda expressions can be used anywhere the type is a functional interface.
+The lambda exp provides the implementation of the single abstract method of the functional interface.
+
+1-4: Functional Interfaces in the java.util.function Package
+============================================================
+
+Set of general purpose functional interfaces.
+Lambda expressions can be used wherever these types are referenced.
+Especially with the Stream API.
+
+Consumer<T> : operation that takes a single value and returns no result (also BiConsumer<T,U> that takes 2 values). To compose consumers, use the default method andThen(Consumer after).
+	String s -> System.out.println(s)
+	(k, v) -> System.out.println("key: " + k + ", value: " + v)
+	
+Supplier : supplier of results, no parameter, 1 return (opposite of consumer).
+	() -> createLogMessage()
+	
+Function<T,R> : accepts one argument, returns one result. The type of the argument and return can be different (also BiFunction<T,U,R> with 2 arguments and 1 result, the types can all be different). To compose, static methods compose (new function applied before), andThen (new function applied after).
+	Student s -> s.getName()
+	(String name, Student s) -> new Teacher(name, student)
+
+UnaryOperator<T> : specialised form of function (single argument and result of the same type)
+	String s -> s.toLowerCase()
+	
+BinaryOperator<T>  :specialised form of BiFunction (2 args, 1 result, all of the same type)
+	(String x, String y) -> {
+		if (x.length() > y.length())
+			return x;
+		return y;
+	}
+	
+Predicate : a boolean valued function of 1 argument. (also BiPredicate). Combined with and(), or(), negate(), isEquals().
+	Student s -> s.graduationYear() == 2011
+	Files.find(start, maxDepth,
+		(path, attr) -> String.valueOf(path).endsWith(".js") && attr.size() > 1024,
+		FileVisitOption.FOLLOW_LINKS);
+
+The function pacjage provides a range of functional interfaces.
+Used extensively in Stream, but also in many other places.
+Unlikely you will need to define your own extensions to the function package.
+
+
