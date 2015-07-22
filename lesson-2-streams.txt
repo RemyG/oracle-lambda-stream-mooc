@@ -1,0 +1,102 @@
+Lesson 2: Introduction to streams
+
+2-1: Introduction to functional programming concepts
+====================================================
+
+Imperative programming (Java):
+Names and variables and values :
+Variable: association between a name and a value.
+Sequences of commands:
+- each command consists of an assignment
+- can change a variable's value
+- form is <variable_name> = <expression>
+- expression may refer to other variables whose value may have been changed by preceding commands
+- values can be passed from command to command
+- commands may be repeated through loops
+
+Functional programming:
+based on structured function calls
+function call which calls other functions in turn (composition):
+	<function1>(<function2>(<function3>...)...)
+each function receives the values from the previous function, and passes them back to the calling function (until the assignment of th eresult)
+names are used only as formal parameters (once value is assigned it can't be changed)
+no concept of command as used in imperative code, therefore no concept of repetition
+
+Names and values :
+Imperative: same name can be associated with different values
+Functional: a name is only associated with one value
+
+Execution order:
+Imperative : 
+- values can be associated with a variable name and can be changed
+- the order of execution of these commands form a contract (if it's changed, the behaviour of the application may change) -> the compiler can't change order
+Functional: 
+- values associated with names can't be changed
+- the execution order doesn't impact the result
+- there is no fixed execution order
+
+Repetition:
+Imperative:
+- values associated with names can be changed by commands
+- these commands can be repeated leading to repeated changes
+- new values may be associated with the same name through repetition (loops)
+Functional:
+- repeated changes are achieved by nested function calls (if we want to repeat a function call 3 times, we call it 3 times)
+- new values may be associated with the same name through recursion
+
+Functions as values: functional programming allows functions to be treated as values (this is why lambda expressions were included in JDK8), to make it much simpler than anonymous inner classes.
+-> ability to pass behaviour as a parameter -> functional approach.
+
+Imperative:
+- values associated with names can be changed
+- order of execution is defined as a contract
+- repetition is explicit and external
+Functional:
+- values associated with names can't be changed
+- order of execution is not defined (we don't care about threads...)
+- repetition is through the use of recursion
+
+2-2: Elements of a Stream
+========================
+
+Stream overview at the high level:
+Abstraction for specifying aggregate computations (we take a collection of
+data, and specify how we want to process this collection of data)
+- not a data structure (the data structure is contained in the collection, the
+  stream itself defines how we process it)
+- can be infinite (no restriction on how many elements the stream can have);
+  how we get out of the stream is different from loops.
+Simplifies the description of how we want to perfom these computations
+- exposes opportunitie sfor optimisation
+- fusing, laziness and parallelism
+
+Stream overview: pipeline where we process data.
+Composed of 3 types of things:
+- a source (connection, network connection...): a stream of elements
+- zero or more intermediate operations (that take the stream as input and
+  generate a stream as output)
+- a terminal operation, producing a result or a side-effect
+
+Example:
+	int total = transactions.stream() // source
+		.filter(t -> t.getBuyer().getCity().equals("London")) //
+intermediate operation
+		.mapToInt(Transaction::getPrice) // intermediate operation
+		.sum(); // terminal operation
+
+Stream terminal operations
+The pipeline is only evaluated when the terminal operation is called:
+- all operations can execute sequentially or in parallel
+- intermediate operations can be merged:
+	- avoiding multiple redundant passes on data
+	- short-circuit operations (e.g. findFirst)
+	- lazy evaluation
+- stream characteristics help identify optimisations:
+	- DISTINCT stream passed to distinct() is a no-op
+
+Think of a Stream as like a pipeline.
+Processes data from the source:
+- no explicit loop used
+- which means a Stream can easily be made parallel
+
+
