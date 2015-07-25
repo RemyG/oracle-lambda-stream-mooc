@@ -262,3 +262,74 @@ Ones like reduce() and collect() need to be looked at in more detail.
 
 2-7: The Optional Class
 =======================
+
+Problems of null: certain situations in Java return a result which is null (ref to an object that is not initialised).
+
+Avoiding NullPointerExceptions:
+	String dir = gpsData.getPosition().getLatitude().getDirection();
+	// works only if gpsData, getPosition() and getLatitude don't return null
+
+Optional Class: 
+- terminal operations like min() and max() may not return a direct result (suppose the input stream is empty)
+- Optional<T>: container for an object ref (null or real object); think of it like a stream of 0 or 1 elements; guaranteed that the Optional ref returned will not be null.
+
+Optional ifPresent() : do something when set
+	if (x != null) {
+		print(x);
+	}
+	opt.ifPresent(x -> print(x));
+	opt.ifPresent(this::print);
+
+Optional filter() : reject certain values of the Optional
+	if (x != null && x.contains("a")) {
+		print(x);
+	}
+	opt.filter(x -> x.contains("a"))
+		.ifPresent(this::print);
+
+Optional map() : transform value if present
+	if (x != null) {
+		String t = x.trim();
+		if (t.length() > 0) {
+			print(t);
+		}
+	}
+	opt.map(String::trim)
+		.filter(t -> t.length() > 0)
+		.ifPresent(this::print);
+
+Optional flatMap() : going deeper
+	public String findSimilar(String s)
+	// can return null, so better replace with
+	Optional<String> tryFindSimilar(String s)
+	Optional<Optional<String>> bad = opt.map(this::tryFindSimilar)
+	// too many optionals
+	Optional<String> similar = opt.flatMap(this::tryFindSimilar)
+
+Update our GPS code:
+	class GPSData {
+		public Optional<Position> getPosition() { ... }
+	}
+	class Position {
+		public Optional<Latitude> getLatitude() { ... }
+	}
+	class Latitude {
+		public String getString() { ... }
+	}
+	String direction = Optional
+		.ofNullable(gpsData) // gpsData could be null or a ref
+		.flatMap(GPSData::getPosition) // returns an Optional
+		.flatMap(Position::getLatitude) // returns an Optional
+		.map(Latitude::getDirection) // returns a String
+		.orElse("None");
+
+Optional class eliminates problems of NPE.
+Can be used in powerful ways to provide complex conditional handling.
+
+Summary
+=======
+
+Streams provide a straight forward way for functional styles programming in Java.
+Stream can either be objects or primitive types.
+A stream consists of a source, possible intermediate operations and a terminal operation. Certain terminal operations return an Optional to avoid possible NPE problems.
+
