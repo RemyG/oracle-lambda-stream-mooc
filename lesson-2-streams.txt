@@ -99,4 +99,166 @@ Processes data from the source:
 - no explicit loop used
 - which means a Stream can easily be made parallel
 
+2-3: Streams of objects and primitive types
+===========================================
 
+Java: not truly object oriented.
+Primitive types are included (byte, short, int, long, double, float,char).
+Wrapped as objects for some situations (e.g. stored in collections): Byte, Short, Integer...
+Conversion between primitive and object representation is often handled by auto-boxing and unboxing.
+
+Object streams:
+By default, a stream produces elements that are objects.
+Sometimes, it's not the best solution:
+
+	int highScore = students.stream()
+		.filter (s -> s.graduationYear() == 2015)
+		.map(s -> s.getScore()) // getScore returns a primitive int,
+								// so the stream has to auto-box ints to objects
+		.max(); // max unboxes each Integer object to get the value
+
+To avoid that, we have 3 primitive stream types: IntStream, DoubleStream and LongStream
+
+	int highScore = students.stream()
+		.filter (s -> s.graduationYear() == 2015)
+		.mapToInt(s -> s.getScore()) // mapToInt creates a stream of int values, so no boxing or unboxing
+		.max();
+
+To improve stream efficiency, we have 3 primitive stream types; use methods like mapToInt(), mapToDouble(), mapToLong(), mapToObj()...
+
+2-4: Stream sources in JDK8
+===========================
+
+95 methods in 23 classes that return a Stream (many of those are intermediate operations in the Stream interface).
+71 methods in 15 classes can be used as practical Stream sources.
+
+Collection Interface:
+- stream() : provides a sequential stream of elements in the collection.
+- parallelStream() : proviles a parallel stream of elements in the collection; uses the fork-join framework for implementation.
+
+Arrays Class
+- stream() : static; array is a collection of data, so logical to be able to create a stream; provides a sequential stream; overloaded methods for different types (double, int, long, Object)
+
+Files Class:
+- find(Path, BiPredicate, FileVisitOption) : a stream of File references that match a given BiPredicate.
+- list(Path) : a stream of entries from a given directory.
+- lines(Path) : a stream of strings that are the lines read from a given file.
+- walk(Path, FileVisitOption) : a stream of File references walking from a given Path.
+
+Random Numbers: Generating infinite Streams:
+- three random related classes: Random, ThreadLocalRandom, SplittableRandom
+- methods to produce finite or infinite streams of random numbers:
+	* ints(), doubles(), longs()
+	* 4 version of each: finite / infinite, with / without seed
+
+Misc Classes and Methods
+- JarFile/ZipFile: stream() : returns a File stream of the contents of the compressed archive
+- BufferedReader: lines() : returns a stream of strings that are the lines read from the input
+- Pattern: splitAsStream() : returns a stream of strings of matches of a pattern; like split() but returns a stream rather than an array.
+- CharSequence: chars() : char values as ints for the sequence
+				codePoints() : Codepoint values for this sequence
+- BitSet: stream() : indices of bits that are set
+
+Stream static methods: IntStream, DoubleStream, LongStream
+These interfaces are primitives specialisations of the Strema interface
+- concat(Stream, Stream), empty()
+	concatenates 2 specified streams, returns an empty stream
+- of(T... values)
+	a stream that consists of the specified values
+- range(int, int), rangeClosed(int, int)
+	a stream from a start to an end value (exclusive or inclusive)
+- generate(IntSupplier), iterate(int, IntUnaryOperator)
+	an infinite stream created by a given Supplier
+	iterate() uses a seed to start the stream
+
+Numerous places to get stream sources; useful methods for retrieving lines from files, files from archives...
+Only Collection can provide a parallel stream directly.
+
+2-5: Stream interface: Intermediate operations
+===============================================
+
+A stream provides a sequence of elements, supporgin either sequential or parallel aggregare operations.
+Most operations take a parameter that describes its behaviour, typically using a Lambda expression, must be non-interfering (does not modify the stream), typically stateless.
+Stream may be changed from sequential to parallel (and vice-versa); all processing is done either sequentially or in parallel; last call wins.
+
+Filtering and Mapping:
+- distinct() : returns a stream with no duplicate elements.
+- filter(Predicate p) : returns a stream with only those elements that return true for the Predicate.
+- map(Function f) : return a stream where the given Function is applied to each element on the input stream.
+- mapToInt(), mapToDouble(), mapToLong() : like map() but producing stream of primitives rather than objects.
+
+Maps and FlatMaps (Map Values in a Stream)
+Map: Input Stream -> 1-to-1 mapping -> Output Stream
+FlatMap: Input Stream -> 1-to-many mapping -> Output Stream concatenating all the created elements created by the mapping
+ex: words in a file
+	List<String> output = readed
+		.lines()
+		.flatMap(line -> Stream.of(line.split(REGEXP)))
+		.filter(word -> word.length() > 0)
+		. collect(Collectors.toList());
+
+Restricting the size of a stream:
+- skip(long n) : returns a stream that skips the first n elements of the input stream
+- limit(long n) : returns a stream that only contains the first n elements of the input stream
+ex:
+	String ouput = bufferedReader
+		.lines()
+		.skipt(2)
+		.limit(2)
+		.collect(Collectors.joining()); // returns lines 3 and 4
+This is optimized (not all the lines are read, the operations are merged and identified).
+
+Sorting and unsorting
+- sorted(Comparator c): returns a stream that is sorted with the order determined by the Comparator; sorted() with no arguments sorts by natural order.
+- unordered(): inherited from BaseStream; returns a stream that is unordered (used internally); can improve efficiency of operations like distinct() and groupingBy().
+
+
+Observing stream elements as they go past
+- peek(Consumer c) : returns an output stream that is identical to the input stream; each element is passed to the accept() method of the Consumer; the Consumer must not modify the elements of the stream; useful for debugging and doing more that one thing with a stream.
+
+Stream interface represents aggregate operations on elements.
+Most methods can use Lambda expressions to define behaviour.
+Powerful range of intermediate operations allow streams to be manipulated as required; build up complex processing from simple building blocks.
+
+2-6: Stream interface: Terminal Operations
+==========================================
+
+Terminal Operation:
+- terminates the pipeline of operations on the stream
+- only at this point is any processing perfomed; this allows for optimisation of the pipeline (lazy evaluation, merged/fused operations, elimination of redundant operations, parallel execution)
+- generates an explicit result or a side effect
+
+Matching elements:
+- findFirst(Predicate p) : returns the first elements that matches using the given Predicate
+- findAny(Predicate p) : same as findFirst() but for a parallel stream (non-deterministic result)
+- boolean allMatch(Predicate p) : whether all the elements of the stream match using the Predicate
+- boolean anyMatch(Predicate p) : whether any of the elements of the stream match using the Predicate
+- boolean noneMatch(Predicate p) : whether no elements match using the Predicate
+
+Collecting results:
+- collect(Collector c) : performs a mutable reduction on the stream
+- toArray() : returns an array containing the elements of the stream
+
+Numerical results: Object Stream
+- count() : returns how many elements are in the stream
+- max(Comparator c) : the maximum value element of the stream using the Comparator; returns an Optional, since the stream may be empty
+- min(Comparator c) : see max
+
+Numerical results: Primitive type Stream
+- average() : returns the arithmetic mean of the stream, returns an Optional
+- sum() : returns the sum of the stream elements.
+
+Iteration
+- forEach(Consumer c) : performs an action for each element of this stream
+- forEachOrdered(Consumer c) : like forEach, but ensures that the order of the elements (if one exists) is respected when used for a parallel stream
+Use with caution! Encourages non-functional (imperative) programming style.
+
+Folding a stream (Creating a single result from multiple input elements)
+- reduce(BinaryOperator accumulator) : performs a reduction on the stream using the BinaryOperator; the accumulator takes a partial result and the next element, and returns a new partial result (Optional); 2 other version: one that takes an initial value (does not return an Optional), one that takes an initial value and BiFunction (equivalent to a fused map and reduce).
+
+Terminal operations provide results or side effects.
+Many types of operation available.
+Ones like reduce() and collect() need to be looked at in more detail.
+
+2-7: The Optional Class
+=======================
