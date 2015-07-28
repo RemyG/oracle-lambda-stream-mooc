@@ -1,0 +1,155 @@
+Lesson 3: Advanced Lambda and Stream Concepts
+
+3-1: Understand and Using Reductions
+====================================
+
+Simple problem: find the length of the longest line in a file
+
+	Path input = Paths.get("lines.txt");
+	int longestLineLength = Files.lines(input)
+		.mapToInt(String::length)
+		.max()
+		.getAsInt();
+
+Another simple problem: find the longest line in a file
+
+Naïve stream solution
+
+	String longest = Files.lines(input)
+		.sort((x, y) -> y.length() - x.length())
+		.findFirst()
+		.get();
+
+* Big files will take a long time and a lot of resources.
+* Must be a better approach
+
+External Iteration Solution
+
+	String longest = "";
+	while ((String s = reader.readLine()) != null)
+		if (s.length() > longest.length())
+			longest = s;
+
+* Simple, but inherently serial.
+* Not thread safe due to mutable state.
+* Not functional.
+
+Recursive approach: the method
+
+	String findLongestString(String s, int index, List<String> l)
+	{
+		if (index >= l.size())
+			return s;
+
+		if (index == l.size() - 1) {
+			if (s.length() > l.get(index).length())
+				return s;
+			return l.get(index);
+		}
+
+		String s2 = findLongestString(l.get(index), index + 1, l);
+
+		if (s.length() > s2.length())
+			return s
+		return s2;
+	}
+
+Recursive approach: solving the problem
+
+	List<String> lines = new ArrayList<>();
+	while ((String s = reader.readLine()) != null)
+		lines.add(s);
+	String longest = findLongestString("", 0, lines);
+
+* No explicit loop, no ;utable state, so functional solution.
+* Not a usable one: larger data sets will generate an OOM exception.
+
+A Better Stream Solution
+
+* The stream API uses the well known filter-map-reduce pattern.
+* For this problem we don't need to filter() or map(), just reduce().
+* Recall the recude method definition:
+	Optional<T> reduce(BinaryOperator<T> accumulator)
+* The key is to find the right accumulator
+	* Again, recall the accumulator takes a partial result and the next element, and returns a new partial result.
+	* In essence it does the same as our recursive solution.
+	* Without all the stack frames.
+* Use the recursive approach as an accumulator for a reduction:
+	
+	String longestLine = Files.lines(input)
+		.reduce((x, y) _> {
+			if (x.length() > y.length())
+				return x; // x in effect maintains the state for us, by always holding the longtest string found so far.
+			return y;
+		})
+		.get();
+
+The Simplest Stream Solution
+
+* Use a specialised form of max()
+* One that takes a Comparator as a parameter
+	Files.lines(input)
+		.max(comparingInt(String::length))
+		.get();
+* comparingInt() is a static method on Comparator
+	Comparator<T> comparingInt(ToIntFunction<? extends T> keyExtractor)
+
+Summary
+
+* Reduction take a stream and reduces it to a single value
+* The way reduction works is defined by the accumulator
+	* Which is a BinaryOperator
+	* The accumulator is applied successively to the stream elements
+	* The reduce() method maintains a partial result state
+	* Like a recursive approach, but without the resource overhead
+* Requires you to think differently to an imperative, loop based approach.
+
+3-2: Finite and Infinite Streams
+================================
+
+Dealing with the inderterminate in Imperative Java
+
+* How to continue processing when we can't predict for how long?
+
+	while(true) {
+		doSomeProcessing();
+		if (someCriteriaIsTrue())
+			break;
+		// Loop repeats indefinitely
+	}
+
+Using Infinite Streams: Making the Stream finite
+
+* Terminate the stream when a condition is met:
+
+	findFirst(Predicate p) // deterministic results whether we use a sequential or parallel stream
+	findAny(Predicate p) // non deterministic results
+
+	int r = Random.ints() // infinite stream of random integers
+		.findFirst(i -> i > 256); // stream terminates when a number greater than 256 is encountered
+
+Using Infinite Streams: Keeping it Infinite
+
+* Sometimes we need to continue to use a stream indefinitely
+* What terminal operation should we use for this?
+	* Use forEach()
+	* This consumes each element from the stream
+	* But does not terminate it
+
+Infinite example: reading temperature from a serial sensor
+	* Converting from farenheit to celcius, removing F
+	* Notifying a listener of changes if registered
+
+	thermalReader.lines()
+		.mapToDouble(s -> Double.parseDouble(s.substring(0, s.length() - 1)))
+		.map(t -> ((t - 32) * 5 / 9)) // conversion
+		.filter(t -> currentTemperature.equals(t)) // test whether the current temperature is different from the new temperature
+		.peek(t -> listener.ifPresent(l -> l.temperatureChanged(t))) // take any values that are different and update the listener if present
+		.forEach(t -> currentTemperature.set(t)); // consume the temperature and set the current temperature with the new value
+
+Summary
+
+* Streams can be infinite as well as finite
+* There is no concept of "breaking" out of a stream, we can terminate the stream using findFirst of findAny
+* Use the appropriate terminal operator to stop processing
+* Or use the infinite stream infinitely.
