@@ -1,7 +1,8 @@
 Lesson 3: Advanced Lambda and Stream Concepts
+=============================================
 
 3-1: Understand and Using Reductions
-====================================
+------------------------------------
 
 Simple problem: find the length of the longest line in a file
 
@@ -105,7 +106,7 @@ Summary
 * Requires you to think differently to an imperative, loop based approach.
 
 3-2: Finite and Infinite Streams
-================================
+--------------------------------
 
 Dealing with the inderterminate in Imperative Java
 
